@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Shoot the furry!</title>
+
+  <style>
+    :root{
+      --bg: #0A0A0F;
+      --panel: #1E1E24;
+      --accent: #8E5BFF;
+      --accent2:#B993FF;
+      --danger:#ff4d6d;
+      --text:#ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:
+    url("./BG.jpg") center/cover no-repeat fixed,
+    var(--bg);
+      color: var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      padding:20px;
+    }
+
+    .app{
+      width:min(900px, 100%);
+      background: linear-gradient(180deg, rgba(142,91,255,.18), transparent 40%), var(--panel);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+
+    header{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 14px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 22px;
+      letter-spacing:.5px;
+    }
+    .title p{
+      margin:0;
+      opacity:.8;
+      font-size: 14px;
+    }
+
+    .stats{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      user-select:none;
+    }
+    .pill b{ color: var(--accent2); }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom: 14px;
+    }
+
+    button, select{
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-size: 14px;
+    }
+    button:hover{ border-color: rgba(255,255,255,.25); }
+    button.primary{
+      background: linear-gradient(180deg, rgba(142,91,255,.9), rgba(142,91,255,.55));
+      border: 1px solid rgba(185,147,255,.45);
+    }
+    button.primary:hover{
+      filter: brightness(1.05);
+    }
+
+    .arena{
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(142,91,255,.20), transparent 35%),
+        radial-gradient(circle at 80% 30%, rgba(185,147,255,.16), transparent 40%),
+        rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      overflow: hidden;
+      user-select:none;
+    }
+
+.target{
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 56px;
+
+  background: url("./Furry.png") center/contain no-repeat;
+  background-color: transparent;
+
+  border: none;
+  border-radius: 0;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); /* keep only soft shadow */
+  cursor: pointer;
+  display: none;
+}
+
+    .target:active{ transform: scale(0.97); }
+
+    .msg{
+      margin-top: 12px;
+      opacity: .9;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .hint{
+      opacity:.75;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      text-align:center;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(2px);
+    }
+
+    .card{
+      background: rgba(30,30,36,.92);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding: 16px;
+      max-width: 520px;
+      box-shadow: 0 12px 36px rgba(0,0,0,.45);
+    }
+
+    .card h2{ margin:0 0 8px 0; font-size: 18px; }
+    .card p{ margin:0; opacity:.85; }
+
+    .hidden{ display:none; }
+    .kbd{
+      border: 1px solid rgba(255,255,255,.18);
+      padding: 1px 7px;
+      border-radius: 7px;
+      background: rgba(255,255,255,.06);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>🎯 Shoot the furry!!!</h1>
+        <p>Shoot the furry as fast as you can. Misses cost points.</p>
+      </div>
+
+      <div class="stats">
+        <div class="pill">Time: <b id="time">30</b>s</div>
+        <div class="pill">Score: <b id="score">0</b></div>
+        <div class="pill">Best: <b id="best">0</b></div>
+      </div>
+    </header>
+
+    <div class="controls">
+      <button class="primary" id="startBtn">Start Game</button>
+      <button id="resetBestBtn">Reset Best</button>
+
+      <select id="difficulty">
+        <option value="easy">Easy (big + slow)</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard (small + fast)</option>
+      </select>
+    </div>
+
+    <div class="arena" id="arena">
+      <div class="target" id="target" aria-label="target"></div>
+
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <h2>How to play</h2>
+          <p>
+            Click <b>Start Game</b>. A target appears in random places.
+            Click it to score points. Clicking the arena (missing) loses points.
+          </p>
+          <p class="hint" style="margin-top:10px;">
+            Tip: press <span class="kbd">Space</span> to start/restart quickly.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <script>
+    // --------- Elements ----------
+    const arena = document.getElementById("arena");
+    const target = document.getElementById("target");
+    const overlay = document.getElementById("overlay");
+
+    const timeEl = document.getElementById("time");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const msgEl = document.getElementById("msg");
+
+    const startBtn = document.getElementById("startBtn");
+    const resetBestBtn = document.getElementById("resetBestBtn");
+    const difficultySelect = document.getElementById("difficulty");
+    const hitSound = new Audio("./bark.mp3");
+    hitSound.volume = 0.4; // adjust loudness (0.0 - 1.0)
+
+    // 🔫 Gun sound (fast replay)
+    const gunSound = new Audio("./Gun.mp3");
+    gunSound.volume = 0.35;
+
+    function playGun() {
+    // clone lets the sound overlap on rapid clicks
+    const s = gunSound.cloneNode();
+    s.volume = gunSound.volume;
+    s.play().catch(() => {}); // ignore autoplay errors
+}
+
+
+    // clone lets the sound overlap on rapid clicks
+    const s = gunSound.cloneNode();
+    s.volume = gunSound.volume;
+    s.play().catch(() => {}); // ignore autoplay errors
+
+    // --------- Game State ----------
+    let score = 0;
+    let timeLeft = 30;
+    let timerId = null;
+    let spawnTimeoutId = null;
+    let running = false;
+
+    // Best score stored in the browser
+    const BEST_KEY = "clickTargetBestScore";
+    let best = Number(localStorage.getItem(BEST_KEY) || 0);
+    bestEl.textContent = best;
+
+    // Difficulty settings
+    const settings = {
+      easy:   { size: 72, minDelay: 900, maxDelay: 1400, hitPoints: 2, missPoints: -1 },
+      normal: { size: 56, minDelay: 650, maxDelay: 1100, hitPoints: 3, missPoints: -1 },
+      hard:   { size: 42, minDelay: 450, maxDelay: 850,  hitPoints: 4, missPoints: -2 },
+    };
+
+    function currentSettings() {
+      return settings[difficultySelect.value] || settings.normal;
+    }
+
+    // --------- Helpers ----------
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function setMessage(text) {
+      msgEl.textContent = text;
+    }
+
+    function updateUI() {
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      bestEl.textContent = best;
+    }
+
+    function placeTargetRandomly() {
+      const { size } = currentSettings();
+      target.style.width = size + "px";
+      target.style.height = size + "px";
+
+      const rect = arena.getBoundingClientRect();
+
+      // Keep target fully inside arena
+      const maxX = rect.width - size;
+      const maxY = rect.height - size;
+
+      const x = randInt(0, Math.max(0, Math.floor(maxX)));
+      const y = randInt(0, Math.max(0, Math.floor(maxY)));
+
+      target.style.left = x + "px";
+      target.style.top = y + "px";
+      target.style.display = "block";
+    }
+
+    function scheduleNextSpawn() {
+      clearTimeout(spawnTimeoutId);
+      const { minDelay, maxDelay } = currentSettings();
+      const delay = randInt(minDelay, maxDelay);
+
+      spawnTimeoutId = setTimeout(() => {
+        if (!running) return;
+        placeTargetRandomly();
+      }, delay);
+    }
+
+    function startGame() {
+      // If already running, restart cleanly
+      stopGameTimers();
+
+      running = true;
+      score = 0;
+      timeLeft = 30;
+      overlay.classList.add("hidden");
+      setMessage("Go! Hit the target!");
+      updateUI();
+
+      // Start timer countdown
+      timerId = setInterval(() => {
+        timeLeft -= 1;
+        updateUI();
+
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+
+      // Spawn target loop
+      placeTargetRandomly();
+      scheduleNextSpawn();
+    }
+
+    function stopGameTimers() {
+      clearInterval(timerId);
+      clearTimeout(spawnTimeoutId);
+      timerId = null;
+      spawnTimeoutId = null;
+    }
+
+    function endGame() {
+      running = false;
+      stopGameTimers();
+      target.style.display = "none";
+      overlay.classList.remove("hidden");
+
+      // Save best score
+      if (score > best) {
+        best = score;
+        localStorage.setItem(BEST_KEY, String(best));
+        setMessage(`Time! Final score: ${score}. NEW BEST! 🎉`);
+      } else {
+        setMessage(`Time! Final score: ${score}. Best: ${best}.`);
+      }
+      updateUI();
+    }
+
+    function addScore(amount) {
+      score = clamp(score + amount, -9999, 999999);
+      updateUI();
+    }
+
+    // --------- Events ----------
+    startBtn.addEventListener("click", startGame);
+
+    resetBestBtn.addEventListener("click", () => {
+      best = 0;
+      localStorage.setItem(BEST_KEY, "0");
+      updateUI();
+      setMessage("Best score reset.");
+    });
+
+    // Click target = hit
+    target.addEventListener("click", (e) => {
+      e.stopPropagation(); // don't count as arena miss
+      if (!running) return;
+
+      playGun(); // 🔫
+
+      const { hitPoints } = currentSettings();
+      addScore(hitPoints);
+
+      // 🔊 Play hit sound
+      hitSound.currentTime = 0; // allow rapid replay
+      hitSound.play();
+
+        // 💥 Flash effect
+      target.style.filter = "brightness(1.8)";
+      setTimeout(() => {
+      target.style.filter = "none";
+    }, 80);
+
+      // Move instantly after hit
+      placeTargetRandomly();
+    });
+
+    // Clicking the arena (not target) = miss
+    arena.addEventListener("click", () => {
+      if (!running) return;
+
+      playGun(); // 🔫
+
+      const { missPoints } = currentSettings();
+      addScore(missPoints);
+      setMessage("Miss! Try to click the target.");
+    });
+
+    // Space to start/restart
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        startGame();
+      }
+    });
+
+    // Initial message
+    setMessage("Press Start (or Space) to play.");
+    updateUI();
+  </script>
+</body>
+</html>
